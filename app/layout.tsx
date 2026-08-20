@@ -16,7 +16,7 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "모범음식점 탐색",
+  title: "믿고 먹을 수 있는 음식점",
   description: "전국모범음식점표준데이터 기반 탐색 서비스",
 };
 

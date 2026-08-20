@@ -14,9 +14,12 @@ test("홈 화면은 제목과 지역/음식종류 필터, 실제 데이터 건�
   const total = loadRestaurants().length;
 
   expect(
-    screen.getByRole("heading", { level: 1, name: "모범음식점 탐색" })
+    screen.getByRole("heading", { level: 1, name: "믿고 먹을 수 있는 음식점" })
   ).toBeInTheDocument();
-  expect(screen.getByRole("combobox")).toHaveTextContent("전체");
+  const regionSelects = screen.getAllByRole("combobox");
+  expect(regionSelects).toHaveLength(2);
+  expect(regionSelects[0]).toHaveTextContent("전체");
+  expect(regionSelects[1]).toHaveTextContent("전체");
   expect(screen.getByText("음식 종류 검색")).toBeInTheDocument();
   expect(screen.getByTestId("result-count")).toHaveTextContent(
     `총 ${total}건`

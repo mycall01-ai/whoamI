@@ -14,6 +14,7 @@ export type Restaurant = {
 };
 
 export const ALL_SIDO = "전체";
+export const ALL_SIGUNGU = "전체";
 
 export function deriveRegion(address: string): { sido: string; sigungu: string } {
   const parts = address.trim().split(/\s+/).filter(Boolean);
@@ -69,6 +70,15 @@ export function getSidoList(restaurants: Restaurant[]): string[] {
   );
 }
 
+// 시도를 먼저 고르지 않으면(전체) 시군구는 의미가 없으므로 빈 목록을 준다.
+export function getSigunguList(restaurants: Restaurant[], sido: string): string[] {
+  if (!sido || sido === ALL_SIDO) return [];
+  const inSido = restaurants.filter((r) => r.sido === sido);
+  return Array.from(new Set(inSido.map((r) => r.sigungu).filter(Boolean))).sort(
+    (a, b) => a.localeCompare(b, "ko")
+  );
+}
+
 export function getFoodTypes(restaurants: Restaurant[]): string[] {
   const types = restaurants.flatMap((r) => splitFoodTypes(r.foodType));
   return Array.from(new Set(types)).sort((a, b) => a.localeCompare(b, "ko"));
@@ -76,13 +86,17 @@ export function getFoodTypes(restaurants: Restaurant[]): string[] {
 
 export function filterRestaurants(
   restaurants: Restaurant[],
-  filters: { sido?: string; foodType?: string | null }
+  filters: { sido?: string; sigungu?: string; foodType?: string | null }
 ): Restaurant[] {
   return restaurants.filter((r) => {
     const sidoMatch =
       !filters.sido || filters.sido === ALL_SIDO || r.sido === filters.sido;
+    const sigunguMatch =
+      !filters.sigungu ||
+      filters.sigungu === ALL_SIGUNGU ||
+      r.sigungu === filters.sigungu;
     const foodTypeMatch =
       !filters.foodType || splitFoodTypes(r.foodType).includes(filters.foodType);
-    return sidoMatch && foodTypeMatch;
+    return sidoMatch && sigunguMatch && foodTypeMatch;
   });
 }

@@ -2,10 +2,12 @@ import { describe, expect, it } from "vitest";
 
 import {
   ALL_SIDO,
+  ALL_SIGUNGU,
   deriveRegion,
   filterRestaurants,
   getFoodTypes,
   getSidoList,
+  getSigunguList,
   splitFoodTypes,
   toBaseAddress,
   type Restaurant,
@@ -35,6 +37,30 @@ const fixture: Restaurant[] = [
     cuisineCategory: "",
     foodType: "전복죽,해물뚝배기",
     designatedDate: "2002-03-26",
+  },
+  {
+    id: "3",
+    sido: "서울특별시",
+    sigungu: "은평구",
+    name: "은평 손칼국수",
+    roadAddress: "서울특별시 은평구 통일로 100",
+    lotAddress: "",
+    phone: "",
+    cuisineCategory: "한식",
+    foodType: "칼국수",
+    designatedDate: "2015-05-01",
+  },
+  {
+    id: "4",
+    sido: "세종특별자치시",
+    sigungu: "",
+    name: "세종 갯장어",
+    roadAddress: "세종특별자치시 노을3로 100",
+    lotAddress: "",
+    phone: "",
+    cuisineCategory: "한식",
+    foodType: "갯장어",
+    designatedDate: "2016-01-01",
   },
 ];
 
@@ -84,7 +110,17 @@ describe("filterRestaurants", () => {
       foodType: "칼국수",
     });
 
-    expect(result).toEqual([fixture[0]]);
+    expect(result).toEqual([fixture[0], fixture[2]]);
+  });
+
+  it("시도·시군구·음식 종류를 모두 만족하는 항목만 남긴다", () => {
+    const result = filterRestaurants(fixture, {
+      sido: "서울특별시",
+      sigungu: "은평구",
+      foodType: "칼국수",
+    });
+
+    expect(result).toEqual([fixture[2]]);
   });
 
   it("조건에 맞는 데이터가 없으면 빈 배열을 반환한다", () => {
@@ -95,11 +131,34 @@ describe("filterRestaurants", () => {
 
     expect(result).toEqual([]);
   });
+
+  it("같은 시도라도 시군구가 다르면 걸러낸다 (서울 선택 시 은평구가 광명시로 새지 않는다)", () => {
+    const result = filterRestaurants(fixture, {
+      sido: "서울특별시",
+      sigungu: "종로구",
+    });
+
+    expect(result).toEqual([fixture[0]]);
+  });
+
+  it("시군구가 전체면 해당 시도 전체를 남긴다", () => {
+    const result = filterRestaurants(fixture, {
+      sido: "서울특별시",
+      sigungu: ALL_SIGUNGU,
+    });
+
+    expect(result).toEqual([fixture[0], fixture[2]]);
+  });
 });
 
 describe("getFoodTypes", () => {
   it("콤마로 묶인 값도 풀어서 중복 없이 가나다순으로 만든다", () => {
-    expect(getFoodTypes(fixture)).toEqual(["전복죽", "칼국수", "해물뚝배기"]);
+    expect(getFoodTypes(fixture)).toEqual([
+      "갯장어",
+      "전복죽",
+      "칼국수",
+      "해물뚝배기",
+    ]);
   });
 });
 
@@ -125,6 +184,28 @@ describe("toBaseAddress", () => {
 
 describe("getSidoList", () => {
   it("중복 없이 가나다순으로 정렬된 시도 목록을 만든다", () => {
-    expect(getSidoList(fixture)).toEqual(["서울특별시", "제주특별자치도"]);
+    expect(getSidoList(fixture)).toEqual([
+      "서울특별시",
+      "세종특별자치시",
+      "제주특별자치도",
+    ]);
+  });
+});
+
+describe("getSigunguList", () => {
+  it("선택한 시도에 속한 시군구만, 가나다순으로 준다", () => {
+    expect(getSigunguList(fixture, "서울특별시")).toEqual(["은평구", "종로구"]);
+  });
+
+  it("다른 시도의 시군구는 섞이지 않는다 (서울에 광명시가 나오지 않는다)", () => {
+    expect(getSigunguList(fixture, "서울특별시")).not.toContain("제주시");
+  });
+
+  it("시도가 전체면 시군구 목록은 비운다", () => {
+    expect(getSigunguList(fixture, ALL_SIDO)).toEqual([]);
+  });
+
+  it("시군구 단위가 없는 시도(세종)는 빈 목록을 준다", () => {
+    expect(getSigunguList(fixture, "세종특별자치시")).toEqual([]);
   });
 });

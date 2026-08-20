@@ -7,9 +7,11 @@ import { Check, ChevronsUpDown, MapPin, Phone, RefreshCw } from "lucide-react";
 import { cn } from "@/lib/utils";
 import {
   ALL_SIDO,
+  ALL_SIGUNGU,
   filterRestaurants,
   getFoodTypes,
   getSidoList,
+  getSigunguList,
   toBaseAddress,
   type Restaurant,
 } from "@/lib/restaurants";
@@ -47,6 +49,7 @@ export function RestaurantExplorer({
 }) {
   const router = useRouter();
   const [sido, setSido] = React.useState<string>(ALL_SIDO);
+  const [sigungu, setSigungu] = React.useState<string>(ALL_SIGUNGU);
   const [foodType, setFoodType] = React.useState<string | null>(null);
   const [foodTypeOpen, setFoodTypeOpen] = React.useState(false);
   const [isRefreshing, startRefresh] = React.useTransition();
@@ -65,20 +68,27 @@ export function RestaurantExplorer({
   }
 
   const sidoList = React.useMemo(() => getSidoList(restaurants), [restaurants]);
+  const sigunguList = React.useMemo(
+    () => getSigunguList(restaurants, sido),
+    [restaurants, sido]
+  );
   const foodTypes = React.useMemo(() => getFoodTypes(restaurants), [restaurants]);
 
   const results = React.useMemo(
-    () => filterRestaurants(restaurants, { sido, foodType }),
-    [restaurants, sido, foodType]
+    () => filterRestaurants(restaurants, { sido, sigungu, foodType }),
+    [restaurants, sido, sigungu, foodType]
   );
   const visibleResults = results.slice(0, DISPLAY_LIMIT);
 
-  const hasActiveFilter = sido !== ALL_SIDO || foodType !== null;
+  const hasActiveFilter =
+    sido !== ALL_SIDO || sigungu !== ALL_SIGUNGU || foodType !== null;
 
   return (
     <div className="flex w-full max-w-3xl flex-col gap-6 px-6 py-16">
       <div className="flex flex-col gap-2">
-        <h1 className="text-2xl font-semibold tracking-tight">모범음식점 탐색</h1>
+        <h1 className="text-2xl font-semibold tracking-tight">
+          믿고 먹을 수 있는 음식점
+        </h1>
         <p className="text-sm text-muted-foreground">
           행정안전부 전국모범음식점표준데이터 기준. 폐업한 곳은 제외하고 영업 중인
           곳만 보여줍니다.
@@ -103,13 +113,37 @@ export function RestaurantExplorer({
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
-        <Select value={sido} onValueChange={(value) => setSido(value ?? ALL_SIDO)}>
-          <SelectTrigger className="w-48">
+        <Select
+          value={sido}
+          onValueChange={(value) => {
+            setSido(value ?? ALL_SIDO);
+            setSigungu(ALL_SIGUNGU);
+          }}
+        >
+          <SelectTrigger className="w-40">
             <SelectValue placeholder="지역 선택" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value={ALL_SIDO}>{ALL_SIDO}</SelectItem>
             {sidoList.map((s) => (
+              <SelectItem key={s} value={s}>
+                {s}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+
+        <Select
+          value={sigungu}
+          onValueChange={(value) => setSigungu(value ?? ALL_SIGUNGU)}
+          disabled={sigunguList.length === 0}
+        >
+          <SelectTrigger className="w-40">
+            <SelectValue placeholder="시/군/구" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value={ALL_SIGUNGU}>{ALL_SIGUNGU}</SelectItem>
+            {sigunguList.map((s) => (
               <SelectItem key={s} value={s}>
                 {s}
               </SelectItem>
@@ -169,6 +203,7 @@ export function RestaurantExplorer({
             className="text-muted-foreground"
             onClick={() => {
               setSido(ALL_SIDO);
+              setSigungu(ALL_SIGUNGU);
               setFoodType(null);
             }}
           >
