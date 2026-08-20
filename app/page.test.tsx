@@ -15,7 +15,7 @@ test("홈 화면은 제목과 지역/음식종류 필터, 실제 데이터 건�
   const total = loadRestaurants().length;
 
   expect(
-    screen.getByRole("heading", { level: 1, name: "믿고 먹을 수 있는 음식점" })
+    screen.getByRole("heading", { level: 1, name: /믿고 먹을 수 있는 음식점/ })
   ).toBeInTheDocument();
   const regionSelects = screen.getAllByRole("combobox");
   expect(regionSelects).toHaveLength(2);

@@ -84,6 +84,16 @@ export function getFoodTypes(restaurants: Restaurant[]): string[] {
   return Array.from(new Set(types)).sort((a, b) => a.localeCompare(b, "ko"));
 }
 
+export const REFRESH_INTERVAL_MS = 2 * 24 * 60 * 60 * 1000;
+
+// 원본이 2일마다 갱신되니, 그 전이면 다시 받아도 똑같은 내용이라 "오래됨"으로 보지 않는다.
+// 갱신시점을 못 읽으면(빈 값 등) 막을 이유가 없으니 오래된 것으로 취급한다.
+export function isDataStale(updatedAt: string, now: Date): boolean {
+  const parsed = new Date(updatedAt.replace(" ", "T"));
+  if (Number.isNaN(parsed.getTime())) return true;
+  return now.getTime() - parsed.getTime() >= REFRESH_INTERVAL_MS;
+}
+
 export function filterRestaurants(
   restaurants: Restaurant[],
   filters: { sido?: string; sigungu?: string; foodType?: string | null }

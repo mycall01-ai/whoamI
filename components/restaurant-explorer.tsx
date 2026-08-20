@@ -12,6 +12,7 @@ import {
   getFoodTypes,
   getSidoList,
   getSigunguList,
+  isDataStale,
   toBaseAddress,
   type Restaurant,
 } from "@/lib/restaurants";
@@ -100,6 +101,7 @@ export function RestaurantExplorer({
 
   const hasRegionFilter = sido !== ALL_SIDO || sigungu !== ALL_SIGUNGU;
   const hasFoodTypeFilter = foodTypeQuery !== "";
+  const canRefresh = isDataStale(updatedAt, new Date());
 
   function submitFoodTypeSearch() {
     setFoodTypeQuery(foodTypeDraft.trim());
@@ -122,7 +124,7 @@ export function RestaurantExplorer({
     <div className="flex w-full max-w-3xl flex-col gap-6 px-6 py-16">
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-semibold tracking-tight">
-          믿고 먹을 수 있는 음식점
+          믿고 먹을 수 있는 음식점 찾니? 정부에서 인증한 곳으로 안내해줄게....
         </h1>
         <p className="text-sm text-muted-foreground">
           행정안전부 전국모범음식점표준데이터 기준. 폐업한 곳은 제외하고 영업 중인
@@ -133,7 +135,12 @@ export function RestaurantExplorer({
             variant="outline"
             size="sm"
             onClick={handleRefresh}
-            disabled={isRefreshing}
+            disabled={isRefreshing || !canRefresh}
+            title={
+              canRefresh
+                ? undefined
+                : "2일마다 갱신되는 데이터라 현재 데이터가 최신이에요"
+            }
           >
             <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
             데이터 새로고침
@@ -142,62 +149,68 @@ export function RestaurantExplorer({
             {updatedAt ? `최신 데이터 갱신시점: ${updatedAt}` : "데이터 갱신시점 정보 없음"}
           </span>
         </div>
+        {!canRefresh && (
+          <p className="text-xs text-muted-foreground">이미 최신 데이터예요</p>
+        )}
         {refreshError && (
           <p className="text-xs text-destructive">새로고침 실패: {refreshError}</p>
         )}
       </div>
 
-      <div className="flex flex-wrap items-center gap-3">
-        <Select
-          value={sido}
-          onValueChange={(value) => {
-            setSido(value ?? ALL_SIDO);
-            setSigungu(ALL_SIGUNGU);
-          }}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="지역 선택" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_SIDO}>{ALL_SIDO}</SelectItem>
-            {sidoList.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        <Select
-          value={sigungu}
-          onValueChange={(value) => setSigungu(value ?? ALL_SIGUNGU)}
-          disabled={sigunguList.length === 0}
-        >
-          <SelectTrigger className="w-40">
-            <SelectValue placeholder="시/군/구" />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value={ALL_SIGUNGU}>{ALL_SIGUNGU}</SelectItem>
-            {sigunguList.map((s) => (
-              <SelectItem key={s} value={s}>
-                {s}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-
-        {hasRegionFilter && (
-          <Button
-            variant="ghost"
-            className="text-muted-foreground"
-            onClick={() => {
-              setSido(ALL_SIDO);
+      <div className="flex flex-col gap-2">
+        <p className="text-sm font-medium">오늘은 어디서 먹고 싶니?</p>
+        <div className="flex flex-wrap items-center gap-3">
+          <Select
+            value={sido}
+            onValueChange={(value) => {
+              setSido(value ?? ALL_SIDO);
               setSigungu(ALL_SIGUNGU);
             }}
           >
-            지역 필터 초기화
-          </Button>
-        )}
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="지역 선택" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_SIDO}>{ALL_SIDO}</SelectItem>
+              {sidoList.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          <Select
+            value={sigungu}
+            onValueChange={(value) => setSigungu(value ?? ALL_SIGUNGU)}
+            disabled={sigunguList.length === 0}
+          >
+            <SelectTrigger className="w-40">
+              <SelectValue placeholder="시/군/구" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value={ALL_SIGUNGU}>{ALL_SIGUNGU}</SelectItem>
+              {sigunguList.map((s) => (
+                <SelectItem key={s} value={s}>
+                  {s}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+
+          {hasRegionFilter && (
+            <Button
+              variant="ghost"
+              className="text-muted-foreground"
+              onClick={() => {
+                setSido(ALL_SIDO);
+                setSigungu(ALL_SIGUNGU);
+              }}
+            >
+              지역 필터 초기화
+            </Button>
+          )}
+        </div>
       </div>
 
       <div className="flex flex-wrap items-center gap-3">

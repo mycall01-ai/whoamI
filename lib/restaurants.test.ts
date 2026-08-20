@@ -8,6 +8,7 @@ import {
   getFoodTypes,
   getSidoList,
   getSigunguList,
+  isDataStale,
   splitFoodTypes,
   toBaseAddress,
   type Restaurant,
@@ -200,6 +201,30 @@ describe("toBaseAddress", () => {
     expect(toBaseAddress("서울특별시 종로구 대학로 53")).toBe(
       "서울특별시 종로구 대학로 53"
     );
+  });
+});
+
+describe("isDataStale", () => {
+  it("2일이 안 지났으면 아직 오래된 게 아니다", () => {
+    const updatedAt = "2026-08-19 22:57:42";
+    const now = new Date("2026-08-20T10:00:00");
+    expect(isDataStale(updatedAt, now)).toBe(false);
+  });
+
+  it("2일이 지났으면 오래된 것으로 본다", () => {
+    const updatedAt = "2026-08-17 00:00:00";
+    const now = new Date("2026-08-20T00:00:00");
+    expect(isDataStale(updatedAt, now)).toBe(true);
+  });
+
+  it("정확히 2일 지난 경계에서도 오래된 것으로 본다", () => {
+    const updatedAt = "2026-08-18 00:00:00";
+    const now = new Date("2026-08-20T00:00:00");
+    expect(isDataStale(updatedAt, now)).toBe(true);
+  });
+
+  it("갱신시점을 알 수 없으면(빈 값) 막지 않는다", () => {
+    expect(isDataStale("", new Date("2026-08-20T00:00:00"))).toBe(true);
   });
 });
 
