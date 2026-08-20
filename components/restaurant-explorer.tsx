@@ -1,7 +1,8 @@
 "use client";
 
 import * as React from "react";
-import { Check, ChevronsUpDown, MapPin, Phone } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { Check, ChevronsUpDown, MapPin, Phone, RefreshCw } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -12,6 +13,7 @@ import {
   toBaseAddress,
   type Restaurant,
 } from "@/lib/restaurants";
+import { refreshRestaurantData } from "@/lib/actions";
 import { Button } from "@/components/ui/button";
 import {
   Select,
@@ -36,10 +38,31 @@ function naverMapSearchUrl(query: string) {
   return `https://map.naver.com/p/search/${encodeURIComponent(query)}`;
 }
 
-export function RestaurantExplorer({ restaurants }: { restaurants: Restaurant[] }) {
+export function RestaurantExplorer({
+  restaurants,
+  updatedAt,
+}: {
+  restaurants: Restaurant[];
+  updatedAt: string;
+}) {
+  const router = useRouter();
   const [sido, setSido] = React.useState<string>(ALL_SIDO);
   const [foodType, setFoodType] = React.useState<string | null>(null);
   const [foodTypeOpen, setFoodTypeOpen] = React.useState(false);
+  const [isRefreshing, startRefresh] = React.useTransition();
+  const [refreshError, setRefreshError] = React.useState<string | null>(null);
+
+  function handleRefresh() {
+    setRefreshError(null);
+    startRefresh(async () => {
+      const result = await refreshRestaurantData();
+      if (!result.ok) {
+        setRefreshError(result.error);
+        return;
+      }
+      router.refresh();
+    });
+  }
 
   const sidoList = React.useMemo(() => getSidoList(restaurants), [restaurants]);
   const foodTypes = React.useMemo(() => getFoodTypes(restaurants), [restaurants]);
@@ -60,6 +83,23 @@ export function RestaurantExplorer({ restaurants }: { restaurants: Restaurant[] 
           행정안전부 전국모범음식점표준데이터 기준. 폐업한 곳은 제외하고 영업 중인
           곳만 보여줍니다.
         </p>
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={handleRefresh}
+            disabled={isRefreshing}
+          >
+            <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
+            데이터 새로고침
+          </Button>
+          <span className="text-xs text-muted-foreground">
+            {updatedAt ? `최신 데이터 갱신시점: ${updatedAt}` : "데이터 갱신시점 정보 없음"}
+          </span>
+        </div>
+        {refreshError && (
+          <p className="text-xs text-destructive">새로고침 실패: {refreshError}</p>
+        )}
       </div>
 
       <div className="flex flex-wrap items-center gap-3">
