@@ -40,9 +40,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# raw data downloads (large, re-downloadable from data.go.kr)
-/data
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
