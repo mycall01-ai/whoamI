@@ -2,7 +2,7 @@
 
 import * as React from "react";
 import { useRouter } from "next/navigation";
-import { Check, ChevronsUpDown, MapPin, Phone, RefreshCw } from "lucide-react";
+import { MapPin, Phone, RefreshCw, Search } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import {
@@ -24,17 +24,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-  CommandList,
-} from "@/components/ui/command";
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from "@/components/ui/input-group";
 
 const DISPLAY_LIMIT = 200;
+const SUGGESTION_LIMIT = 20;
 
 function naverMapSearchUrl(query: string) {
   return `https://map.naver.com/p/search/${encodeURIComponent(query)}`;
@@ -50,8 +48,10 @@ export function RestaurantExplorer({
   const router = useRouter();
   const [sido, setSido] = React.useState<string>(ALL_SIDO);
   const [sigungu, setSigungu] = React.useState<string>(ALL_SIGUNGU);
-  const [foodType, setFoodType] = React.useState<string | null>(null);
-  const [foodTypeOpen, setFoodTypeOpen] = React.useState(false);
+  const [foodTypeQuery, setFoodTypeQuery] = React.useState<string>("");
+  const [foodTypeDraft, setFoodTypeDraft] = React.useState<string>("");
+  const [suggestionsOpen, setSuggestionsOpen] = React.useState(false);
+  const foodTypeBoxRef = React.useRef<HTMLDivElement>(null);
   const [isRefreshing, startRefresh] = React.useTransition();
   const [refreshError, setRefreshError] = React.useState<string | null>(null);
 
@@ -74,14 +74,49 @@ export function RestaurantExplorer({
   );
   const foodTypes = React.useMemo(() => getFoodTypes(restaurants), [restaurants]);
 
+  const foodTypeSuggestions = React.useMemo(() => {
+    const query = foodTypeDraft.trim().toLowerCase();
+    if (!query) return [];
+    return foodTypes
+      .filter((type) => type.toLowerCase().includes(query))
+      .slice(0, SUGGESTION_LIMIT);
+  }, [foodTypes, foodTypeDraft]);
+
+  React.useEffect(() => {
+    function handleClickOutside(e: MouseEvent) {
+      if (!foodTypeBoxRef.current?.contains(e.target as Node)) {
+        setSuggestionsOpen(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => document.removeEventListener("mousedown", handleClickOutside);
+  }, []);
+
   const results = React.useMemo(
-    () => filterRestaurants(restaurants, { sido, sigungu, foodType }),
-    [restaurants, sido, sigungu, foodType]
+    () => filterRestaurants(restaurants, { sido, sigungu, foodType: foodTypeQuery }),
+    [restaurants, sido, sigungu, foodTypeQuery]
   );
   const visibleResults = results.slice(0, DISPLAY_LIMIT);
 
-  const hasActiveFilter =
-    sido !== ALL_SIDO || sigungu !== ALL_SIGUNGU || foodType !== null;
+  const hasRegionFilter = sido !== ALL_SIDO || sigungu !== ALL_SIGUNGU;
+  const hasFoodTypeFilter = foodTypeQuery !== "";
+
+  function submitFoodTypeSearch() {
+    setFoodTypeQuery(foodTypeDraft.trim());
+    setSuggestionsOpen(false);
+  }
+
+  function selectFoodTypeSuggestion(type: string) {
+    setFoodTypeDraft(type);
+    setFoodTypeQuery(type);
+    setSuggestionsOpen(false);
+  }
+
+  function resetFoodTypeFilter() {
+    setFoodTypeDraft("");
+    setFoodTypeQuery("");
+    setSuggestionsOpen(false);
+  }
 
   return (
     <div className="flex w-full max-w-3xl flex-col gap-6 px-6 py-16">
@@ -151,63 +186,71 @@ export function RestaurantExplorer({
           </SelectContent>
         </Select>
 
-        <Popover open={foodTypeOpen} onOpenChange={setFoodTypeOpen}>
-          <PopoverTrigger
-            render={
-              <Button variant="outline" className="w-56 justify-between font-normal">
-                <span className={cn(!foodType && "text-muted-foreground")}>
-                  {foodType ?? "음식 종류 검색"}
-                </span>
-                <ChevronsUpDown className="size-4 opacity-50" />
-              </Button>
-            }
-          />
-          <PopoverContent className="w-56 p-0">
-            <Command>
-              <CommandInput placeholder="음식 종류 검색..." />
-              <CommandList>
-                <CommandEmpty>일치하는 음식 종류가 없어요.</CommandEmpty>
-                <CommandGroup>
-                  <CommandItem
-                    onSelect={() => {
-                      setFoodType(null);
-                      setFoodTypeOpen(false);
-                    }}
-                  >
-                    <Check className={cn(foodType ? "opacity-0" : "opacity-100")} />
-                    전체
-                  </CommandItem>
-                  {foodTypes.map((type) => (
-                    <CommandItem
-                      key={type}
-                      onSelect={() => {
-                        setFoodType(type);
-                        setFoodTypeOpen(false);
-                      }}
-                    >
-                      <Check
-                        className={cn(foodType === type ? "opacity-100" : "opacity-0")}
-                      />
-                      {type}
-                    </CommandItem>
-                  ))}
-                </CommandGroup>
-              </CommandList>
-            </Command>
-          </PopoverContent>
-        </Popover>
-
-        {hasActiveFilter && (
+        {hasRegionFilter && (
           <Button
             variant="ghost"
             className="text-muted-foreground"
             onClick={() => {
               setSido(ALL_SIDO);
               setSigungu(ALL_SIGUNGU);
-              setFoodType(null);
             }}
           >
-            필터 초기화
+            지역 필터 초기화
+          </Button>
+        )}
+      </div>
+
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="relative w-64" ref={foodTypeBoxRef}>
+          <InputGroup>
+            <InputGroupInput
+              placeholder="음식 종류 검색 (예: 만두) 후 Enter"
+              value={foodTypeDraft}
+              onChange={(e) => {
+                const value = e.target.value;
+                setFoodTypeDraft(value);
+                setSuggestionsOpen(value.trim() !== "");
+              }}
+              onFocus={() => {
+                if (foodTypeDraft.trim()) setSuggestionsOpen(true);
+              }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") submitFoodTypeSearch();
+                if (e.key === "Escape") setSuggestionsOpen(false);
+              }}
+            />
+            <InputGroupAddon>
+              <Search className="size-4 opacity-50" />
+            </InputGroupAddon>
+            <InputGroupAddon align="inline-end">
+              <InputGroupButton onClick={submitFoodTypeSearch}>검색</InputGroupButton>
+            </InputGroupAddon>
+          </InputGroup>
+
+          {suggestionsOpen && foodTypeSuggestions.length > 0 && (
+            <ul className="absolute z-10 mt-1 max-h-60 w-full overflow-auto rounded-md border border-border bg-popover text-popover-foreground shadow-md">
+              {foodTypeSuggestions.map((type) => (
+                <li key={type}>
+                  <button
+                    type="button"
+                    className="w-full px-3 py-1.5 text-left text-sm hover:bg-muted"
+                    onClick={() => selectFoodTypeSuggestion(type)}
+                  >
+                    {type}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+
+        {hasFoodTypeFilter && (
+          <Button
+            variant="ghost"
+            className="text-muted-foreground"
+            onClick={resetFoodTypeFilter}
+          >
+            음식종류 필터 초기화
           </Button>
         )}
       </div>

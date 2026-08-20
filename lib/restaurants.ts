@@ -95,8 +95,9 @@ export function filterRestaurants(
       !filters.sigungu ||
       filters.sigungu === ALL_SIGUNGU ||
       r.sigungu === filters.sigungu;
+    const query = filters.foodType?.trim();
     const foodTypeMatch =
-      !filters.foodType || splitFoodTypes(r.foodType).includes(filters.foodType);
+      !query || splitFoodTypes(r.foodType).some((t) => t.includes(query));
     return sidoMatch && sigunguMatch && foodTypeMatch;
   });
 }

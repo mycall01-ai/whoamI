@@ -62,6 +62,18 @@ const fixture: Restaurant[] = [
     foodType: "갯장어",
     designatedDate: "2016-01-01",
   },
+  {
+    id: "5",
+    sido: "경기도",
+    sigungu: "광명시",
+    name: "얼큰이네",
+    roadAddress: "경기도 광명시 오리로 1",
+    lotAddress: "",
+    phone: "",
+    cuisineCategory: "한식",
+    foodType: "얼큰칼국수",
+    designatedDate: "2018-01-01",
+  },
 ];
 
 describe("deriveRegion", () => {
@@ -102,6 +114,14 @@ describe("filterRestaurants", () => {
     });
 
     expect(result).toEqual([fixture[1]]);
+  });
+
+  it("정확히 같은 값이 아니라 포함하는 값도 매칭된다 (칼국수 -> 얼큰칼국수 포함)", () => {
+    const result = filterRestaurants(fixture, {
+      foodType: "칼국수",
+    });
+
+    expect(result).toEqual([fixture[0], fixture[2], fixture[4]]);
   });
 
   it("지역과 음식 종류를 동시에 만족하는 항목만 남긴다", () => {
@@ -155,6 +175,7 @@ describe("getFoodTypes", () => {
   it("콤마로 묶인 값도 풀어서 중복 없이 가나다순으로 만든다", () => {
     expect(getFoodTypes(fixture)).toEqual([
       "갯장어",
+      "얼큰칼국수",
       "전복죽",
       "칼국수",
       "해물뚝배기",
@@ -185,6 +206,7 @@ describe("toBaseAddress", () => {
 describe("getSidoList", () => {
   it("중복 없이 가나다순으로 정렬된 시도 목록을 만든다", () => {
     expect(getSidoList(fixture)).toEqual([
+      "경기도",
       "서울특별시",
       "세종특별자치시",
       "제주특별자치도",
@@ -198,7 +220,9 @@ describe("getSigunguList", () => {
   });
 
   it("다른 시도의 시군구는 섞이지 않는다 (서울에 광명시가 나오지 않는다)", () => {
-    expect(getSigunguList(fixture, "서울특별시")).not.toContain("제주시");
+    const seoulSigungu = getSigunguList(fixture, "서울특별시");
+    expect(seoulSigungu).not.toContain("제주시");
+    expect(seoulSigungu).not.toContain("광명시");
   });
 
   it("시도가 전체면 시군구 목록은 비운다", () => {
