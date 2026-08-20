@@ -130,10 +130,11 @@ export function RestaurantExplorer({
           행정안전부 전국모범음식점표준데이터 기준. 폐업한 곳은 제외하고 영업 중인
           곳만 보여줍니다.
         </p>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-col gap-1.5">
           <Button
             variant="outline"
             size="sm"
+            className="self-start"
             onClick={handleRefresh}
             disabled={isRefreshing || !canRefresh}
             title={
@@ -145,13 +146,14 @@ export function RestaurantExplorer({
             <RefreshCw className={cn("size-3.5", isRefreshing && "animate-spin")} />
             데이터 새로고침
           </Button>
-          <span className="text-xs text-muted-foreground">
-            {updatedAt ? `최신 데이터 갱신시점: ${updatedAt}` : "데이터 갱신시점 정보 없음"}
-          </span>
+          <p className="text-xs text-muted-foreground">
+            {!updatedAt
+              ? "데이터 갱신시점 정보 없음"
+              : canRefresh
+                ? `최신 데이터 갱신시점: ${updatedAt}`
+                : `이미 최신 데이터예요 (최신 데이터 갱신시점: ${updatedAt})`}
+          </p>
         </div>
-        {!canRefresh && (
-          <p className="text-xs text-muted-foreground">이미 최신 데이터예요</p>
-        )}
         {refreshError && (
           <p className="text-xs text-destructive">새로고침 실패: {refreshError}</p>
         )}
